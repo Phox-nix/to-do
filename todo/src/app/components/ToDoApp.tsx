@@ -2,35 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { Todo } from '../types/todo';
-import { fetchTodos } from '../api/todos';
+import { getTodos } from '../api/todos';
 import ToDoInput from './ToDoInput';
 import ToDoList from './ToDoList';
+import styles from './ToDoApp.module.scss';
 
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [input, setInput] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  useEffect(() => {
-    const loadTodos = async () => {
-      const data = await fetchTodos();
-      setTodos(data);
-    };
+  const addTodo = () => {
+    if (!input.trim()) return; //prevent adding empty todos
 
-    loadTodos();
-  }, []);
-
-  const addOrEditTodo = () => {
-    if (!input.trim()) return;
-
-    if (editingId !== null) {
-      setTodos((prev) =>
-        prev.map((todo) => (todo.id === editingId ? { ...todo, title: input } : todo)),
-      );
-      setEditingId(null);
-    } else {
-      setTodos((prev) => [...prev, { id: Date.now(), title: input, completed: false }]); //date.now() to generate a unique id
-    }
+    setTodos((prev) => [{ id: Date.now(), title: input, completed: false }, ...prev]); //add new todo
 
     setInput(''); //clears input after adding or editing
   };
@@ -45,23 +29,43 @@ export default function TodoApp() {
     setTodos((prev) => prev.filter((todo) => todo.id !== id));
   };
 
-  const startEdit = (todo: Todo) => {
-    setInput(todo.title);
-    setEditingId(todo.id);
+  const updateTodo = (id: number, newTitle: string) => {
+    if (!newTitle.trim()) return;
+
+    setTodos((prev) => prev.map((todo) => (todo.id === id ? { ...todo, title: newTitle } : todo)));
+  };
+  const loadTodos = async () => {
+    const storedTodos = localStorage.getItem('todos'); //check local storage for cached todos
+    if (storedTodos) {
+      //check for cached todos
+      setTodos(JSON.parse(storedTodos)); //load cached todos
+      return;
+    }
+    const data = await getTodos(); //fetch todos from api
+    setTodos(data); //set fetched todos
+    localStorage.setItem('todos', JSON.stringify(data)); //cache fetched todos
   };
 
+  useEffect(() => {
+    loadTodos();
+  }, []);
+  useEffect(() => {
+    localStorage.setItem('todos', JSON.stringify(todos));
+  }, [todos]);
+
   return (
-    <div style={{ maxWidth: 400, margin: '40px auto' }}>
-      <h2>📝 Todo List</h2>
+    <div className={styles.wrapper}>
+      <h2 className={styles.title}>📝 My To-do List</h2>
+      <div className={styles.divider} />
 
       <ToDoInput
         input={input}
         setInput={setInput}
-        onSubmit={addOrEditTodo}
-        editing={editingId !== null}
+        onSubmit={addTodo}
+        editing={false} //no edit mode in this component
       />
 
-      <ToDoList todos={todos} onToggle={toggleTodo} onDelete={deleteTodo} onEdit={startEdit} />
+      <ToDoList todos={todos} onToggle={toggleTodo} onDelete={deleteTodo} onUpdate={updateTodo} />
     </div>
   );
 }

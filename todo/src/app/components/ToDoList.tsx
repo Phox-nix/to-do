@@ -5,10 +5,10 @@ interface TodoListProps {
   todos: Todo[];
   onToggle: (id: number) => void;
   onDelete: (id: number) => void;
-  onEdit: (todo: Todo) => void;
+  onUpdate: (id: number, title: string) => void;
 }
 
-export default function TodoList({ todos, onToggle, onDelete, onEdit }: TodoListProps) {
+export default function TodoList({ todos, onToggle, onDelete, onUpdate }: TodoListProps) {
   return (
     <ul style={{ padding: 0, marginTop: 20 }}>
       {todos.map((todo) => (
@@ -17,7 +17,7 @@ export default function TodoList({ todos, onToggle, onDelete, onEdit }: TodoList
           todo={todo}
           onToggle={onToggle}
           onDelete={onDelete}
-          onEdit={onEdit}
+          onUpdate={onUpdate}
         />
       ))}
     </ul>
